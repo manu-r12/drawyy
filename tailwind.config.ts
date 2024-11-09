@@ -9,11 +9,12 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
+        appleBlue: "#007AFF",     // Apple Blue
+        color_gray: "#1f1f1f",   
       },
     },
   },
   plugins: [],
 };
+
 export default config;
