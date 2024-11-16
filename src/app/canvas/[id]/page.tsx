@@ -88,7 +88,6 @@ const Canvas: React.FC = () => {
     const { offsetX, offsetY } = e.nativeEvent;
     
     if (tool === 'erase') {
-      // Handle eraser tool separately
       return;
     }
     
@@ -120,6 +119,7 @@ const Canvas: React.FC = () => {
   const saveDrawing = async () => {
     try {
       await fetch('/api/save-drawing', { method: 'POST', body: JSON.stringify(elements) });
+      console.log("Here are all the elements =>", JSON.stringify(elements))
       alert('Drawing saved successfully');
     } catch (err) {
       console.error(err);

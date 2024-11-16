@@ -1,11 +1,13 @@
 import { DrawElement } from '@/types/CanvasTypes';
 import { RoughCanvas } from 'roughjs/bin/canvas';
+import {useDrawing} from "@/hooks/useDrawing";
 
 export const drawElement = (
   context: CanvasRenderingContext2D,
   roughCanvas: RoughCanvas,
   element: DrawElement
 ) => {
+
   if (element.tool === 'freeDraw') {
     context.beginPath();
     context.strokeStyle = element.lineColor;

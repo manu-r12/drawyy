@@ -1,6 +1,6 @@
 "use client";
-import React, { useState } from 'react';
-import { SidebarOptions } from '../sidebar/siderbarOptions';
+import React, {useState} from 'react';
+import {SidebarOptions} from '../sidebar/siderbarOptions';
 import Sidebar from '../sidebar/sidebar';
 import ContentView from '../contentView/contentView';
 
@@ -18,13 +18,8 @@ const Dashboard = () => {
       <Sidebar onOptionSelect={handleOptionSelect} />
 
       {/* Content View */}
-      <div className="flex-1 p-2 text-white bg-black border-l-[1px] border-solid border-color_gray">
-        {selectedOption ? (
-          <ContentView option={selectedOption} />
-        ) : (
-          // Default to All Boards
-          <ContentView option={SidebarOptions.AllBoards} />
-        )}
+      <div className="flex-1 p-2 text-black bg-white border-l-[1px] border-solid border-[#e4e7eb]">
+          {selectedOption ? <ContentView option={selectedOption}/> : <ContentView option={SidebarOptions.AllBoards}/>}
       </div>
     </section>
   );

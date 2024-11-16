@@ -13,7 +13,7 @@ export const downloadImage = (canvasRef: React.RefObject<HTMLCanvasElement>) => 
     if (!whiteCtx) return;
   
     // Fill with white background
-    whiteCtx.fillStyle = '#FFFFFF';
+    whiteCtx.fillStyle = '#000';
     whiteCtx.fillRect(0, 0, whiteCanvas.width, whiteCanvas.height);
     whiteCtx.drawImage(canvas, 0, 0);
   

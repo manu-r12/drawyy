@@ -10,7 +10,7 @@ interface ListCellProps {
 const ListCell: React.FC<ListCellProps> = ({ title, description }) => {
   return (
     <motion.div
-      className="flex justify-between bg-color_gray text-black h-[100px] shadow-md rounded-lg p-4"
+      className="flex justify-between bg-white text-black h-[100px] shadow-sm rounded-lg p-4 border-[1.5px] border-[#e4e7eb]"
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.3 }}
