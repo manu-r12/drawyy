@@ -57,7 +57,7 @@ const ProfileHeader: React.FC = () => {
   return (
     <div className="relative">
       <div
-        className="flex flex-row gap-2 items-center justify-center h-full hover:bg-[#f3f4f6] cursor-pointer px-3 py-1 rounded-2xl transition-all duration-200"
+        className="flex flex-row gap-2 items-center justify-center h-full hover:bg-violet-50 cursor-pointer px-3 py-1 rounded-2xl transition-all duration-200"
         onClick={handleMenuToggle}
       >
         <CircleImage alt="profile-image" size={60} src={data.user.image} />

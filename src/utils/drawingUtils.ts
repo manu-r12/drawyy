@@ -1,13 +1,12 @@
 import { DrawElement } from '@/types/CanvasTypes';
 import { RoughCanvas } from 'roughjs/bin/canvas';
-import {useDrawing} from "@/hooks/useDrawing";
+import { useDrawing } from "@/hooks/useDrawing";
 
 export const drawElement = (
   context: CanvasRenderingContext2D,
   roughCanvas: RoughCanvas,
   element: DrawElement
 ) => {
-
   if (element.tool === 'freeDraw') {
     context.beginPath();
     context.strokeStyle = element.lineColor;
@@ -15,6 +14,9 @@ export const drawElement = (
     context.moveTo(element.points[0].x, element.points[0].y);
     element.points.forEach((point) => context.lineTo(point.x, point.y));
     context.stroke();
+  } else if (element.tool === 'text') {
+    context.font = `${element.fontSize}px Poppins`; 
+    context.fillText(element.text, element.position.x, element.position.y);
   } else {
     // Handle shape elements (line and rectangle)
     if (element.tool === 'line') {

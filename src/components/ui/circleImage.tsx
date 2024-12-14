@@ -10,16 +10,21 @@ interface CircleImageProps {
 const CircleImage: React.FC<CircleImageProps> = ({ src, alt, size = 128 }) => {
   return (
     <div
-      className="rounded-full overflow-hidden border-4 border-gray-300 bg-gray-200"
+      className="relative rounded-full p-[4px] bg-violet-500"
       style={{ width: size, height: size }}
     >
-      <Image
-        src={src}
-        alt={alt}
-        width={size}
-        height={size}
-        className="object-cover"
-      />
+      <div
+        className="rounded-full overflow-hidden bg-gray-200"
+        style={{ width: "100%", height: "100%" }}
+      >
+        <Image
+          src={src}
+          alt={alt}
+          width={size}
+          height={size}
+          className="object-cover"
+        />
+      </div>
     </div>
   );
 };

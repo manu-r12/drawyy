@@ -16,7 +16,7 @@ export const useDrawing = () => {
       const updated = [...prev];
       const lastElement = updated[updated.length - 1];
       if (lastElement) {
-        
+        // @ts-ignore
         updated[updated.length - 1] = { ...lastElement, ...update };
       }
       return updated;

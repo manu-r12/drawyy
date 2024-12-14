@@ -1,45 +1,53 @@
 "use client";
-import React, { useRef, useEffect, useState } from 'react';
-
-import { FaUndo, 
-        FaRedo, 
-        FaEraser, 
-        FaPencilAlt, 
-        FaRegSquare, 
-        FaGripLines } 
-from 'react-icons/fa';
-import { AiOutlineDownload, AiOutlineShareAlt } from 'react-icons/ai';
-
-
-import { motion } from 'framer-motion';
-import rough from 'roughjs/bin/rough';
-import { Tool, 
-        DrawElement } from '@/types/CanvasTypes';
-import { useDrawing } from '@/hooks/useDrawing';
-import { ToolButton } from '@/components/controls/toolbutton';
-import { ColorPicker } from '@/components/controls/colorPicker';
-import { drawElement } from '@/utils/drawingUtils';
-import { downloadImage } from '@/utils/downloadDrawing';
+import { ToolButton } from "@/components/controls/toolbutton";
+import EditableHeading from "@/components/ui/editableHeading";
+import ToolOptions from "@/components/ui/toolOptions";
+import { useDrawing } from "@/hooks/useDrawing";
+import { checkIfDrawingExists, fetchDrawingById} from "@/services/drawingService";
+import { selectBoard } from "@/store/boardState/selector";
+import { DrawElement, Drawing, Tool } from "@/types/CanvasTypes";
+import { downloadImage } from "@/utils/downloadDrawing";
+import { drawElement } from "@/utils/drawingUtils";
+import { saveDrawing } from "@/utils/saveDrawing";
+import { renameDrawingTitle } from "@/utils/updateDrawingTitle";
+import { motion } from "framer-motion";
+import { useSession } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
-
-const COLORS = ['#fff', 
-                '#FF5733', 
-                '#3498db', 
-                '#2ecc71'
-            ];
+import React, { useEffect, useRef, useState } from "react";
+import { AiOutlineDownload, AiOutlineShareAlt } from "react-icons/ai";
+import {
+  FaEraser,
+  FaFont,
+  FaGripLines,
+  FaPencilAlt,
+  FaRedo,
+  FaRegSquare,
+  FaUndo,
+} from "react-icons/fa";
+import { PiEmptyBold } from "react-icons/pi";
+import { TbCloudCheck } from "react-icons/tb";
+import { useDispatch, useSelector } from "react-redux";
+import "react-toastify/dist/ReactToastify.css";
+import rough from "roughjs/bin/rough";
 
 const Canvas: React.FC = () => {
-
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [tool, setTool] = useState<Tool>('freeDraw');
-  const [lineColor, setLineColor] = useState('#fff');
-  const [lineWidth, setLineWidth] = useState(5);
+  const [tool, setTool] = useState<Tool>("freeDraw");
+  const [lineColor, setLineColor] = useState("#000");
+  const [lineWidth, setLineWidth] = useState(2);
+  const [text, setText] = useState("");
+  const [textPosition, setTextPosition] = useState<{ x: number; y: number } | null>(null);
+  const [drawingExists, setDrawingExists] = useState(false);
+  const [drawingData, setDrawingData] = useState<Drawing | null>(null);
+  const [isSaved, setIsSaved] = useState<boolean>(true);
 
+  const dispatch = useDispatch();
   const router = useRouter();
-  const id = usePathname()
+  const { data } = useSession();
+  const fullPath = usePathname();
+  const id = fullPath.split("/").pop();
+  const board = useSelector(selectBoard);
 
-  console.log("The Canvas id is -> ", id)
-  
   const {
     elements,
     isDrawing,
@@ -48,54 +56,81 @@ const Canvas: React.FC = () => {
     updateLastElement,
     undo,
     redo,
-    finishDrawing
+    finishDrawing,
   } = useDrawing();
 
-  const startDrawing = (e: React.MouseEvent) => {
-    const { offsetX, offsetY } = e.nativeEvent;
-    
-    if (tool === 'erase') {
-      // Handle eraser tool separately
-      return;
-    } 
-    
-    if (tool === 'freeDraw') {
+  const handleTextInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setText(e.target.value);
+  };
+
+  const placeText = () => {
+    if (text && textPosition) {
       const newElement: DrawElement = {
-        tool: 'freeDraw',
-        points: [{ x: offsetX, y: offsetY }],
-        lineColor,
-        lineWidth,
+        tool: "text",
+        text: text,
+        position: { x: textPosition.x, y: textPosition.y },
+        fontSize: 20,
       };
       addElement(newElement);
-    } else {
-      const newElement: DrawElement = {
-        tool,
-        startX: offsetX,
-        startY: offsetY,
-        endX: offsetX,
-        endY: offsetY,
-        lineColor,
-        lineWidth,
-      };
-      addElement(newElement);
+      setText(""); 
+      setTextPosition(null); 
     }
+  };
+
+
+  const startDrawing = (e: React.MouseEvent) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const { left, top } = canvas.getBoundingClientRect();
+    const offsetX = e.clientX - left;
+    const offsetY = e.clientY - top;
+
+    if (tool === "erase") return;
+
+    if (tool === "text") {
+      setTextPosition({ x: offsetX, y: offsetY });
+      return;
+    }
+
+    const newElement: DrawElement =
+      tool === "freeDraw"
+        ? {
+            tool: "freeDraw",
+            points: [{ x: offsetX, y: offsetY }],
+            lineColor,
+            lineWidth,
+          }
+        : {
+            tool,
+            startX: offsetX,
+            startY: offsetY,
+            endX: offsetX,
+            endY: offsetY,
+            lineColor,
+            lineWidth,
+          };
+
+    addElement(newElement);
     setIsDrawing(true);
   };
 
   const draw = (e: React.MouseEvent) => {
-    if (!isDrawing) return;
+    if (!isDrawing || tool === "text") return;
 
-    const { offsetX, offsetY } = e.nativeEvent;
-    
-    if (tool === 'erase') {
-      return;
-    }
-    
-    if (tool === 'freeDraw') {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const { left, top } = canvas.getBoundingClientRect();
+    const offsetX = e.clientX - left;
+    const offsetY = e.clientY - top;
+
+    if (tool === "freeDraw") {
       const lastElement = elements[elements.length - 1];
-      if (lastElement && 'points' in lastElement) {
+      if (lastElement && "points" in lastElement) {
         updateLastElement({
-          points: [...lastElement.points, { x: offsetX, y: offsetY }]
+          ...lastElement,
+          points: [...lastElement.points, { x: offsetX, y: offsetY }],
         });
       }
     } else {
@@ -103,33 +138,79 @@ const Canvas: React.FC = () => {
     }
   };
 
+  // check if the collab drawing data is saved or not in the use collocations
+  // if not, create it otherwise ignore it 
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const context = canvas.getContext('2d');
+    const context = canvas.getContext("2d");
     if (!context) return;
 
     context.clearRect(0, 0, canvas.width, canvas.height);
     const roughCanvas = rough.canvas(canvas);
 
-    elements.forEach(element => drawElement(context, roughCanvas, element));
+    elements.forEach((element) => drawElement(context, roughCanvas, element));
   }, [elements]);
 
-  const saveDrawing = async () => {
-    try {
-      await fetch('/api/save-drawing', { method: 'POST', body: JSON.stringify(elements) });
-      console.log("Here are all the elements =>", JSON.stringify(elements))
-      alert('Drawing saved successfully');
-    } catch (err) {
-      console.error(err);
-    }
+
+  useEffect(() => {
+    const checkDrawing = async () => {
+      const exists = await checkIfDrawingExists(data?.user.id ?? "", id!);
+      setDrawingExists(exists);
+
+      if (exists) {
+        // Fetch the saved drawing and load it onto the canvas
+        const data = await fetchDrawingById(id!);
+        setDrawingData(data)
+        console.log("Set Drawing Data:", data)
+        if (data) {
+          data.elements.forEach((element: DrawElement) => addElement(element));
+        }
+      }
+    };
+    checkDrawing();
+  }, [data?.user.id, id]);
+
+
+  const renameTitleHandler = async (newTitle: string) => {
+    console.log("New Title: ", newTitle)
+    console.log("Updating Title....")
+    await renameDrawingTitle(id!, newTitle, data?.user.id ?? "")
+  }
+
+  // sync changes with "the" existing drawing 
+  const updateDrawing = () => {
+    console.log("updateDrawing.....");
+  }
+
+  // save the drawing for the first time (useage : should be used only once)
+  const saveDrawingData = async () => {
+    const drawing = {
+      drawingId: id!,
+      title: board.title ?? "Untitled Board",
+      elements,
+    };
+    console.log("Drawing:", drawing)
+    await saveDrawing(drawing, data?.user.id ?? "", canvasRef, board.title ?? "Untitled Board");
+    setDrawingExists(true)
   };
 
-  
+  const persistDrawingData = async () => {
+    if (drawingExists){
+      updateDrawing();
+    }else {
+      await saveDrawingData()
+    }
+    // setIsSaved(true)
+  }
 
   return (
     <div className="relative flex items-center justify-center w-screen h-screen bg-gray-100">
+    
+      <EditableHeading onTitleUpdate={renameTitleHandler} boardtitle={drawingData?.title ?? board.title!}/>
+
       <canvas
         ref={canvasRef}
         width={window.innerWidth}
@@ -138,24 +219,63 @@ const Canvas: React.FC = () => {
         onMouseMove={draw}
         onMouseUp={finishDrawing}
         onMouseLeave={finishDrawing}
-        className="border border-gray-300 bg-black shadow-md"
-      />
+        className="border border-gray-300 bg-[#ffffff] shadow-md"
+        style={{ cursor: tool === "freeDraw" ? "crosshair" : "default" }}
+        />
 
-    <div className="absolute top-4 right-4 rounded-full p-5 flex items-center space-x-4">
-         <button onClick={() => downloadImage(canvasRef)} className="p-2 shadow-md bg-white rounded-full hover:bg-gray-200 focus:outline-none">
-                    <AiOutlineDownload className="h-7 w-7 text-black" />
-                </button>
-                <button className="p-2 shadow-md bg-white rounded-full hover:bg-gray-200 focus:outline-none">
-                    <AiOutlineShareAlt className="h-7 w-7 text-black" />
-                </button>
-    </div>
+      {tool === "text" && textPosition && (
+        <input
+          type="text"
+          value={text}
+          onChange={handleTextInput}
+          onBlur={placeText}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              placeText();
+              console.log("Elements", elements)
+            }
+          }}
+          style={{
+            position: "absolute",
+            left: textPosition.x,
+            top: textPosition.y,
+            border: "none",
+            outline: "none",
+            background: "transparent",
+            color: lineColor,
+            fontSize: `${20}px`,
+            zIndex: 10,
+          }}
+        />
+      )}
+      <div className="absolute top-3 right-4 rounded-full p-5  flex items-center space-x-4">
+        {drawingExists &&
+            <div className="p-2 rounded-full bg-violet-100 shadow-md">
+              <TbCloudCheck className="h-8 w-8 text-violet-500"/>
+            </div>
+        }
+        <button
+            onClick={() => {
+              downloadImage(canvasRef)
+            }}
+            className="p-2 shadow-md bg-white rounded-full hover:bg-gray-200 focus:outline-none"
+        >
+          <AiOutlineDownload className="h-7 w-7 text-black" />
+        </button>
+        <button className="p-2 shadow-md bg-white rounded-full hover:bg-gray-200 focus:outline-none">
+          <AiOutlineShareAlt className="h-7 w-7 text-black" />
+        </button>
+      </div>
 
-    <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-white shadow-lg shadow-slate-300 rounded-full p-5 flex items-center space-x-4">
+     <ToolOptions tool={tool} onColorSelect={setLineColor} selectedColor={lineColor} onStrokeSet={setLineWidth}/>
+
+      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-white shadow-md border-solid border-[#e4e7eb] border-[1.5px] shadow-slate-100 rounded-[20px] px-5 py-3 flex items-center gap-2 space-x-4">
         {[
-          { tool: 'freeDraw', icon: <FaPencilAlt size={24} /> },
-          { tool: 'line', icon: <FaGripLines size={24} /> },
-          { tool: 'rectangle', icon: <FaRegSquare size={24} /> },
-          { tool: 'erase', icon: <FaEraser size={24} /> },
+          { tool: "freeDraw", icon: <FaPencilAlt size={20} /> },
+          { tool: "line", icon: <FaGripLines size={20} /> },
+          { tool: "rectangle", icon: <FaRegSquare size={20} /> },
+          { tool: "erase", icon: <FaEraser size={20} /> },
+          { tool: "text", icon: <FaFont size={20} /> },
         ].map((item) => (
           <ToolButton
             key={item.tool}
@@ -165,19 +285,15 @@ const Canvas: React.FC = () => {
           />
         ))}
 
-        <ToolButton icon={<FaUndo size={24} />} onClick={undo} />
-        <ToolButton icon={<FaRedo size={24} />} onClick={redo} />
+        <ToolButton icon={<PiEmptyBold size={20} />} onClick={() => {}} />
+        <ToolButton icon={<FaUndo size={20} />} onClick={undo} />
+        <ToolButton icon={<FaRedo size={20} />} onClick={redo} />
 
-        <ColorPicker
-          colors={COLORS}
-          selectedColor={lineColor}
-          onColorSelect={setLineColor}
-        />
 
         <motion.button
-          onClick={saveDrawing}
+          onClick={persistDrawingData}
           whileTap={{ scale: 0.9 }}
-          className="p-2 rounded-md bg-blue-500 text-white"
+          className={`p-2 rounded-md ${isSaved ? ` bg-violet-500` : `bg-red-500` } focus:bg-violet-400 hover:bg-green-400 text-white`}
         >
           Save
         </motion.button>

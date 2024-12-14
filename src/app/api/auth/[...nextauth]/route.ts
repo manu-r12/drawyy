@@ -1,6 +1,7 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import type { NextAuthOptions } from "next-auth";
+import { saveUser } from "../../../../services/userService";
 
 export const authOptions: NextAuthOptions = {
     providers: [
@@ -10,18 +11,35 @@ export const authOptions: NextAuthOptions = {
         }),
     ],
     callbacks: {
+        async signIn({ user, account, profile }) {
+            try {
+              if (user && account?.provider === 'google') {
+                const data = {
+                    uid: user.id,
+                    name: user.name ?? "Unknown",
+                    email: user.email ?? "",
+                    drawings: [],
+                    collab_drawings: []
+                }
+                
+                await saveUser(data)
+              }
+              return true; // Allow sign in
+            } catch (error) {
+              console.error('Error in signIn callback:', error);
+              return true;
+            }
+          },
         async jwt({ token, user }) {
             if (user) {
-                // Add user info to JWT
-                token.id = user.id;
-                token.name = user.name;
-                token.email = user.email;
-                token.image = user.image;
+                token.id = user.id ?? "";
+                token.name = user.name ?? "Unknown User";
+                token.email = user.email ?? "";
+                token.image = user.image ?? "";
             }
             return token;
         },
         async session({ session, token }) {
-            // Add JWT data to session
             if (session.user) {
                 session.user.id = token.id as string;
                 session.user.name = token.name as string;

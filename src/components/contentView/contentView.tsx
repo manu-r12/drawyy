@@ -1,4 +1,5 @@
 import BoardsView from "../boards/boardsView";
+import CollabBoardView from "../boards/collabBoardView";
 import { SidebarOptions } from "../sidebar/siderbarOptions";
 import {motion} from 'framer-motion'
 
@@ -31,7 +32,7 @@ const ContentView: React.FC<{ option: SidebarOptions }> = ({ option }) => {
 
             case SidebarOptions.Collab:
 
-              return <div>Collab Content</div>;
+              return <CollabBoardView/>
 
             case SidebarOptions.Favorites:
 
