@@ -1,5 +1,10 @@
 # Drawyy - A Drawing Application
 
+
+https://github.com/user-attachments/assets/7444c815-a409-4aec-beaf-3a3172ed1854
+
+
+
 Drawyy is a web-based drawing application built with Next.js, styled with Tailwind CSS, and uses animations from Framer Motion. It offers users an interactive canvas to create and manipulate shapes. The backend is powered by FastAPI, and image art generation features are supported by Stable Diffusion.
 
 ## Features
