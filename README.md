@@ -1,7 +1,8 @@
 # Drawyy - A Drawing Application
 
-
-https://github.com/user-attachments/assets/7444c815-a409-4aec-beaf-3a3172ed1854
+<div align="center" style="margin-bottom: 20px;">
+  <img src="https://github.com/user-attachments/assets/ad966855-808a-4ffc-a124-e094800c48ed" alt="GIF Example" />
+</div>
 
 
 
