@@ -77,46 +77,66 @@ const CollaborativeCanvas: React.FC = () => {
 
   const router = useRouter()
 
-  // WebSocket connection setup
+
   useEffect(() => {
     const ws = new WebSocket(`ws://127.0.0.1:8000/ws/${drawingId}`);
     
     ws.onopen = () => {
+
       console.log('Connected to WebSocket');
+
       setConnectedUsers([
         {
         userId: session?.user.id ?? "",
         userName: session?.user.name ?? ""
       }])
+
       ws.send(JSON.stringify({
+
         type: 'user_connected',
         user: {
           uid: session?.user.id ?? " ",
           name: session?.user.name ?? " ",
           email: session?.user.email ?? " "
         },
+
       }));
+
     };
 
     ws.onmessage = (event) => {
+
       const data = JSON.parse(event.data);
       
       switch (data.type) {
+
         case 'draw_update':
+            // console.log("draw_update called on WebSocket")
             handleRemoteDrawing(data.element);
           break;
+
         case 'initial_drawing_state':
+
+          console.log("Here are the joined users - ", data.joined_users)
+
           setIsCreatedByYou(data.created_by == session?.user.id)
           data.elements.forEach(handleRemoteDrawing);
           break;
 
-        case 'user_connected':
-          setConnectedUsers(prev => [
-            ...prev,
-            { userId: data.user.uid, userName: data.user.name }
-          ]);
-          break;
+
+          case 'user_connected':
+
+            console.log("Here are the joined users - ", data.joined_users)
+            setConnectedUsers(prev => [
+              ...prev,
+              ...data.joined_users.map((user: any) => ({
+                userId: user.uid, 
+                userName: user.name 
+              }))
+            ]);
+            break;
           
+
         case 'user_disconnected':
 
           setConnectedUsers(prev => 
@@ -124,7 +144,9 @@ const CollaborativeCanvas: React.FC = () => {
           );
           break;
 
+
         case 'session_ended':
+
           setSessionEndNotification({
             show: true,
             endedBy: data.user.name
@@ -478,9 +500,9 @@ const CollaborativeCanvas: React.FC = () => {
               </button>
             </div>
             <div className="space-y-2">
-              {connectedUsers.map((user) => (
+              {connectedUsers.map((user, idx) => (
                 <div 
-                  key={user.userId}
+                  key={idx}
                   className="flex items-center space-x-2 p-2 rounded-lg bg-gray-50"
                 >
                   <div className="w-2 h-2 rounded-full bg-green-400" />
